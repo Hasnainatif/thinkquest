@@ -380,7 +380,7 @@ class AIStudyAssistant:
         Adds a footer at the bottom of the page.
         """
         st.markdown(
-            "<div class='footer'>© 2024 ThinkQuest. All rights reserved.</div>",
+            "<div class='footer'>© 2025 ThinkQuest. All rights reserved.</div>",
             unsafe_allow_html=True,
         )
 
