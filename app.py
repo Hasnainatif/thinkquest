@@ -245,7 +245,7 @@ topic_type = st.sidebar.radio("Topic type:", ("General", "Coding", "Math", "Scie
 
 # Main content
 st.markdown("<h1 class='main-header'>AI Study Assistant</h1>", unsafe_allow_html=True)
-st.markdown("<h2 class='sub-header'>Welcome! How can we help you today?</h2>", unsafe_allow_html=True)
+st.markdown("<h2 class='sub-header'>Welcome! How can I assist you today?</h2>", unsafe_allow_html=True)
 
 # Create tabs for different input types
 text_tab, image_tab, pdf_tab = st.tabs(["Text Input", "Image Input", "PDF Input"])
