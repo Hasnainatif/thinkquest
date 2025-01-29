@@ -65,7 +65,7 @@ def get_ai_response(input_text, topic_type):
 
         # Make the API call
         response = client.messages.create(
-            model="claude-3-opus-20240229",  # or another Claude model version
+            model="claude-3-5-sonnet-20241022",  # or another Claude model version
             max_tokens=1000,
             messages=[
                 {
