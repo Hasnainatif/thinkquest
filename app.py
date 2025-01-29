@@ -240,7 +240,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar
-st.sidebar.image("Q.png", width=250)
+st.sidebar.image("img.png", width=250)
 topic_type = st.sidebar.radio("Topic type:", ("General", "Coding", "Math", "Science"))
 
 # Main content
