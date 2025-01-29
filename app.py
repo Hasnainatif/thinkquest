@@ -16,8 +16,6 @@ if 'image_responses' not in st.session_state:
 if 'pdf_responses' not in st.session_state:
     st.session_state.pdf_responses = []
 
-# Initialize Groq client
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # Initialize OCR
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Update this path for Windows
@@ -43,38 +41,45 @@ def extract_text_from_pdf(pdf_file):
         st.error(f"Error processing PDF: {str(e)}")
         return None
 
+from anthropic import Anthropic
+
 def get_ai_response(input_text, topic_type):
     try:
-        system_message = """you are an AI study assistant. Provide hints and approaches to solve problems, but don't give exact answers. 
-        When crafting your response, consider the following prompts and guidelines:the answershould be versatile and arises curiosity in the user and do not reveal the exact answers give them hints to solve a particular solution . you should tell them that you could not give them exact anwer if they demand .
-        Ensure each hint is unique and encourages critical thinking. Focus on {topic_type}-related """
-        if topic_type == "Coding":
-            system_message += "Focus on coding-related topics and provide specific coding hints."
-        elif topic_type == "Math":
-            system_message += "Focus on math-related topics and provide specific mathematical hints."
-        elif topic_type == "Science":
-            system_message += "Focus on science-related topics and provide specific scientific hints."
-        else:
-            system_message += "Focus on general education-related topics."
+        # Initialize Anthropic client
+        client = Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"]) 
 
-        chat_completion = client.chat.completions.create(
+        system_message = """you are an AI study assistant. Provide hints and approaches to solve problems, but don't give exact answers. 
+        When crafting your response, consider the following prompts and guidelines: the answer should be versatile and arises curiosity in the user and do not reveal the exact answers give them hints to solve a particular solution. you should tell them that you could not give them exact answer if they demand."""
+
+        if topic_type == "Coding":
+            system_message += " Focus on coding-related topics and provide specific coding hints."
+        elif topic_type == "Math":
+            system_message += " Focus on math-related topics and provide specific mathematical hints."
+        elif topic_type == "Science":
+            system_message += " Focus on science-related topics and provide specific scientific hints."
+        else:
+            system_message += " Focus on general education-related topics."
+
+        # Create the message for Claude
+        message = f"{system_message}\n\nHuman: {input_text}\n\nAssistant: Let me help you with that {topic_type} question."
+
+        # Make the API call
+        response = client.messages.create(
+            model="claude-3-opus-20240229",  # or another Claude model version
+            max_tokens=1000,
             messages=[
                 {
-                    "role": "system",
-                    "content": system_message
-                },
-                {
                     "role": "user",
-                    "content": input_text,
+                    "content": message
                 }
-            ],
-            model="deepseek-r1-distill-llama-70b",
+            ]
         )
-        return chat_completion.choices[0].message.content
+
+        return response.content[0].text
+
     except Exception as e:
         st.error(f"Error getting AI response: {str(e)}")
         return None
-
 # Streamlit UI
 st.set_page_config(page_title="AI Study Assistant", page_icon="📚", layout="wide")
 st.markdown("""
