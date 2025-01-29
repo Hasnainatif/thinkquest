@@ -296,7 +296,7 @@ class AIStudyAssistant:
         and provide an AI response (education-focused). The processed text is not shown directly.
         """
         image_file = st.file_uploader("Upload image file", type=["png", "jpg", "jpeg"])
-        if st.button("Get Response"):
+        if st.button("Get Response (Image)"):
             with st.spinner("Processing..."):
                 if image_file:
                     extracted_text = self.process_image(image_file)
@@ -314,7 +314,7 @@ class AIStudyAssistant:
         and provide an AI response (education-focused). The processed text is not shown directly.
         """
         pdf_file = st.file_uploader("Upload PDF file", type=["pdf"])
-        if st.button("Get Response"):
+        if st.button("Get Response (PDF)"):
             with st.spinner("Processing..."):
                 if pdf_file:
                     text = self.extract_text_from_pdf(pdf_file)
