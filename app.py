@@ -199,21 +199,23 @@ st.markdown("""
 
     /* Tab styling */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 2px;
+        gap: 20px;  /* Increased gap between tabs */
+        padding: 0 10px;  /* Added padding around the tab list */
     }
-
+    
     .stTabs [data-baseweb="tab"] {
         height: 50px;
         background-color: #D6DCE5;
         color: #2C3E50;
         border-radius: 5px 5px 0 0;
+        margin: 0 5px;  /* Added margin on sides of each tab */
+        padding: 0 20px;  /* Added padding within each tab */
     }
-
+    
     .stTabs [aria-selected="true"] {
         background-color: #3498DB;
         color: white;
     }
-
     /* Previous responses and question/answer headings */
     .response-card h4 {
         color: #2C3E50;
