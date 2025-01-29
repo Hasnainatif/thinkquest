@@ -14,9 +14,9 @@ class AIStudyAssistant:
         - Initializes the EasyOCR reader (for English).
         """
         self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-        self.reader = easyocr.Reader(['en'], gpu=False)  # Use GPU=True if you have GPU support
+        self.reader = easyocr.Reader(['en'], gpu=False)  # Use GPU=True if available
 
-        # Initialize session state
+        # Initialize session states if they don't already exist
         if 'text_responses' not in st.session_state:
             st.session_state.text_responses = []
         if 'image_responses' not in st.session_state:
@@ -24,29 +24,52 @@ class AIStudyAssistant:
         if 'pdf_responses' not in st.session_state:
             st.session_state.pdf_responses = []
 
-    def process_image(self, image_file):
+    def get_ai_response(self, input_text, topic_type):
         """
-        Use EasyOCR to extract text from an uploaded image.
-        The 'image_file' is a file-like object uploaded in Streamlit.
+        Sends user input text to the Groq API and returns the AI-generated response.
+        The 'topic_type' parameter tailors the system instructions to a specific subject.
         """
         try:
-            image_file.seek(0)  # Reset file pointer
+            # Construct a system message for the AI
+            system_message = (
+                "You are an AI study assistant. Provide hints and approaches to solve problems, "
+                "but don't give exact answers. Ensure each hint elicits curiosity. "
+                f"Focus on {topic_type}-related topics."
+            )
+
+            # Send to Groq for completion
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": input_text},
+                ],
+                model="llama-3.3-70b-versatile",
+            )
+            return chat_completion.choices[0].message.content
+        except Exception as e:
+            st.error(f"Error getting AI response: {str(e)}")
+            return None
+
+    def process_image(self, image_file):
+        """
+        Use EasyOCR to extract text from the uploaded image.
+        Returns the extracted text as a string.
+        """
+        try:
+            image_file.seek(0)  # Reset file pointer if needed
             with open("temp_image.png", "wb") as f:
                 f.write(image_file.read())
-            
-            # Use EasyOCR to read the saved image file
             results = self.reader.readtext("temp_image.png", detail=0)
-            # Join results into one string
             extracted_text = " ".join(results)
             return extracted_text
         except Exception as e:
-            st.error(f"Error processing image with EasyOCR: {str(e)}")
+            st.error(f"Error processing image: {str(e)}")
             return None
 
     def extract_text_from_pdf(self, pdf_file):
         """
         Extract text from an uploaded PDF using PyMuPDF.
-        The 'pdf_file' is a file-like object uploaded in Streamlit.
+        Returns the combined text from all pages.
         """
         try:
             text = ""
@@ -60,52 +83,13 @@ class AIStudyAssistant:
             st.error(f"Error processing PDF: {str(e)}")
             return None
 
-    def get_ai_response(self, input_text, topic_type):
-        """
-        Send the user input text to the Groq API and get back an AI-generated hint or response.
-        The 'topic_type' parameter modifies the system message to focus on a specific subject.
-        """
-        try:
-            # Construct a system message tailored to the topic type
-            system_message = (
-                "You are an AI study assistant. Provide hints and approaches to solve problems, "
-                "but don't give exact answers. When crafting your response, consider the following "
-                "prompts and guidelines: the answer should be versatile and elicit curiosity. "
-                "Ensure each hint is unique and encourages critical thinking. "
-                f"Focus on {topic_type}-related "
-            )
-
-            # Extend system message with details
-            if topic_type == "Coding":
-                system_message += "topics and provide specific coding hints."
-            elif topic_type == "Math":
-                system_message += "topics and provide specific mathematical hints."
-            elif topic_type == "Science":
-                system_message += "topics and provide specific scientific hints."
-            else:
-                system_message += "general education topics."
-
-            # Send to Groq for completion
-            chat_completion = self.client.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_message},
-                    {"role": "user", "content": input_text},
-                ],
-                model="llama-3.3-70b-versatile",
-            )
-            return chat_completion.choices[0].message.content
-
-        except Exception as e:
-            st.error(f"Error getting AI response from Groq: {str(e)}")
-            return None
-
     def render_ui(self):
         """
-        Main function that builds the UI with Streamlit:
-        - Page setup
-        - Sidebar for topic selection
-        - Tabs for text, image, and PDF input
-        - Previous responses display
+        Sets up the main UI layout:
+        - Page config
+        - Sidebar
+        - Tabs for text, image, PDF input
+        - Footer and progress bar
         """
         self.setup_page()
         self.render_sidebar()
@@ -113,7 +97,7 @@ class AIStudyAssistant:
 
     def setup_page(self):
         """
-        Configure Streamlit page and apply custom CSS styles.
+        Configure the page and load custom CSS styling.
         """
         st.set_page_config(page_title="AI Study Assistant", page_icon="📚", layout="wide")
         st.markdown(
@@ -251,14 +235,14 @@ class AIStudyAssistant:
 
     def render_sidebar(self):
         """
-        Render the sidebar with a logo and a topic type radio selector.
+        Render the sidebar with a logo and a topic type selector.
         """
         st.sidebar.image("img.png", width=250)
         self.topic_type = st.sidebar.radio("Topic type:", ("General", "Coding", "Math", "Science"))
 
     def render_tabs(self):
         """
-        Create tabs for text input, image input, and PDF input.
+        Create three tabs: Text Input, Image Input, and PDF Input.
         """
         st.markdown("<h1 class='main-header'>AI Study Assistant</h1>", unsafe_allow_html=True)
         st.markdown("<h2 class='sub-header'>Welcome! How can I assist you today?</h2>", unsafe_allow_html=True)
@@ -279,7 +263,7 @@ class AIStudyAssistant:
 
     def render_text_tab(self):
         """
-        Render the text input tab, including a text area and a button to get a hint.
+        Text input tab: allows the user to input text and receive AI hints.
         """
         user_input = st.text_area("Enter your question:")
         if st.button("Get Hint (Text)"):
@@ -287,31 +271,33 @@ class AIStudyAssistant:
                 if user_input:
                     hint = self.get_ai_response(user_input, self.topic_type)
                     if hint:
-                        self.display_response(user_input, hint, 'text')
+                        self.display_ai_hint(hint, "text", user_input)
                 else:
                     st.warning("Please enter a question.")
         self.display_previous_responses('text')
 
     def render_image_tab(self):
         """
-        Render the image input tab, including an uploader and a button to process the image.
+        Image input tab: user can upload an image, and the system will extract text
+        and provide an AI response. The processed text is not shown directly.
         """
         image_file = st.file_uploader("Upload image file", type=["png", "jpg", "jpeg"])
         if st.button("Get Hint (Image)"):
             with st.spinner("Processing..."):
                 if image_file:
-                    text = self.process_image(image_file)
-                    if text:
-                        hint = self.get_ai_response(text, self.topic_type)
+                    extracted_text = self.process_image(image_file)
+                    if extracted_text:
+                        hint = self.get_ai_response(extracted_text, self.topic_type)
                         if hint:
-                            self.display_response(text, hint, 'image')
+                            self.display_ai_hint(hint, "image", extracted_text)
                 else:
                     st.warning("Please upload an image.")
         self.display_previous_responses('image')
 
     def render_pdf_tab(self):
         """
-        Render the PDF input tab, including an uploader and a button to process the PDF.
+        PDF input tab: user can upload a PDF, and the system will extract text
+        and provide an AI response. The processed text is not shown directly.
         """
         pdf_file = st.file_uploader("Upload PDF file", type=["pdf"])
         if st.button("Get Hint (PDF)"):
@@ -321,67 +307,61 @@ class AIStudyAssistant:
                     if text:
                         hint = self.get_ai_response(text, self.topic_type)
                         if hint:
-                            self.display_response(text, hint, 'pdf')
+                            self.display_ai_hint(hint, "pdf", text)
                 else:
                     st.warning("Please upload a PDF file.")
         self.display_previous_responses('pdf')
 
-    def display_response(self, question, hint, response_type):
+    def display_ai_hint(self, hint, source_type, raw_text):
         """
-        Display the AI hint or processed text based on the input type.
+        Displays only the AI-generated hint (no processed text shown). 
+        Also stores the raw_text in session state if needed.
         """
         st.markdown("<div class='response-card'>", unsafe_allow_html=True)
-        
-        if response_type != 'text':
-            st.markdown("### Processed text:")
-            preview = question if len(question) < 500 else question[:500] + "..."
-            st.write(preview)
-            st.markdown("### Hint:")
-        else:
-            st.markdown("### Hint:")
-
+        st.markdown("### AI Hint:")
         st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-        if response_type == 'text':
-            st.session_state.text_responses.append((question, hint))
-        elif response_type == 'image':
-            st.session_state.image_responses.append((question, hint))
-        elif response_type == 'pdf':
-            st.session_state.pdf_responses.append((question, hint))
+        # Store in session_state for future reference, if desired
+        if source_type == 'text':
+            st.session_state.text_responses.append((raw_text, hint))
+        elif source_type == 'image':
+            st.session_state.image_responses.append((raw_text, hint))
+        elif source_type == 'pdf':
+            st.session_state.pdf_responses.append((raw_text, hint))
 
     def display_previous_responses(self, response_type):
         """
-        Display previous responses, grouped by text, image, or PDF.
+        Renders previous responses (without showing the extracted text).
+        We only show the AI hints saved in session state.
         """
         if response_type == 'text' and st.session_state.text_responses:
             st.markdown("### Previous Text Responses:")
-            self.render_responses(st.session_state.text_responses, "Question", "Answer")
+            self.render_responses(st.session_state.text_responses, "Question", "AI Hint")
         elif response_type == 'image' and st.session_state.image_responses:
             st.markdown("### Previous Image Responses:")
-            self.render_responses(st.session_state.image_responses, "Processed Text", "Answer")
+            self.render_responses(st.session_state.image_responses, "Raw Data (hidden)", "AI Hint")
         elif response_type == 'pdf' and st.session_state.pdf_responses:
             st.markdown("### Previous PDF Responses:")
-            self.render_responses(st.session_state.pdf_responses, "Processed Text", "Answer")
+            self.render_responses(st.session_state.pdf_responses, "Raw Data (hidden)", "AI Hint")
 
-    def render_responses(self, responses, question_label, answer_label):
+    def render_responses(self, responses, input_label, hint_label):
         """
-        Helper method to display a list of (question, answer) pairs with a designated format.
+        General method to render previous hints. We do not show the extracted text here—just the hint.
         """
-        for i, (question, answer) in enumerate(reversed(responses), 1):
+        for i, (input_text, hint) in enumerate(reversed(responses), 1):
             st.markdown("<div class='response-card'>", unsafe_allow_html=True)
-            st.markdown(f"<h4>{question_label} {i}:</h4>", unsafe_allow_html=True)
-            preview = question if len(question) < 500 else question[:500] + "..."
-            st.write(preview)
-            st.markdown(f"<h4>{answer_label} {i}:</h4>", unsafe_allow_html=True)
-            st.markdown(f'<div class="hint-text">{answer}</div>', unsafe_allow_html=True)
+            st.markdown(f"<h4>{input_label} {i}:</h4>", unsafe_allow_html=True)
+            st.write("(Not shown)")  # Not displaying the processed text
+            st.markdown(f"<h4>{hint_label} {i}:</h4>", unsafe_allow_html=True)
+            st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
             if i < len(responses):
                 st.markdown("<div class='response-divider'></div>", unsafe_allow_html=True)
 
     def render_footer(self):
         """
-        Renders a fixed footer at the bottom of the page.
+        Adds a footer at the bottom of the page.
         """
         st.markdown(
             "<div class='footer'>© 2024 ThinkQuest. All rights reserved.</div>",
@@ -399,6 +379,7 @@ class AIStudyAssistant:
         st.sidebar.success("Ready!")
 
 
+# Instantiate and render the UI
 if __name__ == "__main__":
     assistant = AIStudyAssistant()
     assistant.render_ui()
