@@ -10,21 +10,23 @@ class AIStudyAssistant:
         """
         Initialize the AI study assistant:
         - Sets up the Groq client using the API key stored in Streamlit secrets.
-        - Initializes session states for text, image, and PDF responses.
+        - Initializes session states for text, image, and PDF outputs.
         - Initializes the EasyOCR reader (for English).
         """
         self.client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         self.reader = easyocr.Reader(['en'], gpu=False)  # Use GPU=True if available
 
         # Initialize session states if they don't already exist
-        if 'text_responses' not in st.session_state:
-            st.session_state.text_responses = []
-        if 'image_responses' not in st.session_state:
-            st.session_state.image_responses = []
-        if 'pdf_responses' not in st.session_state:
-            st.session_state.pdf_responses = []
+        if 'text_outputs' not in st.session_state:
+            st.session_state.text_outputs = []
+        if 'image_outputs' not in st.session_state:
+            st.session_state.image_outputs = []
+        if 'pdf_outputs' not in st.session_state:
+            st.session_state.pdf_outputs = []
+        if 'theme' not in st.session_state:
+            st.session_state.theme = 'Light'
 
-    def get_ai_response(self, input_text, topic_type):
+    def get_ai_output(self, input_text, topic_type):
         """
         Sends user input text to the Groq API and returns the AI-generated response.
         Includes a safeguard: if the user demands exact answers, it responds with a refusal.
@@ -38,9 +40,8 @@ class AIStudyAssistant:
         try:
             system_message = (
                 "You are an AI study assistant focusing on educational topics. "
-                "Provide hints and approaches to solve problems, but do not give exact answers. "
-                "Ensure each hint fosters curiosity and deeper thinking. "
-                f"Focus strictly on {topic_type}-related hints. "
+                "Provide insights and approaches to solve problems, but do not give exact answers. "
+                f"Focus strictly on {topic_type}-related content. "
                 "If a user demands an exact answer, politely refuse."
             )
 
@@ -93,8 +94,8 @@ class AIStudyAssistant:
         """
         Sets up the main UI layout:
         - Page config
-        - Sidebar
-        - Tabs for text, image, PDF input
+        - Sidebar with theme toggle and topic type
+        - Tabs for text, image, and PDF
         - Footer and progress bar
         """
         self.setup_page()
@@ -103,25 +104,68 @@ class AIStudyAssistant:
 
     def setup_page(self):
         """
-        Configure the page and load custom CSS styling with a more modern, advanced look.
+        Configures the page based on selected theme.
         """
         st.set_page_config(page_title="AI Study Assistant", page_icon="📚", layout="wide")
-        st.markdown(
-            """
+
+        # Conditional CSS for Light or Dark
+        if st.session_state.theme == "Dark":
+            css_style = """
             <style>
-                /* Overall background gradient */
+                .stApp {
+                    background: #1E1E1E;
+                    color: #F0F0F0;
+                }
+                .response-card {
+                    background-color: #2A2D2E;
+                    color: #F0F0F0;
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin: 20px 0;
+                    border: 1px solid #444;
+                    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.05);
+                }
+                .response-card:hover {
+                    box-shadow: 0 8px 16px rgba(255, 255, 255, 0.08);
+                }
+                .response-text {
+                    background-color: #333;
+                    border-left: 6px solid #3498DB;
+                }
+                .stButton > button {
+                    background-color: #3498DB !important;
+                    color: #ffffff !important;
+                    border-radius: 6px;
+                }
+                .stButton > button:hover {
+                    background-color: #2980b9 !important;
+                }
+                .stSidebar {
+                    background-color: #2A2D2E !important;
+                }
+                .stFileUploader, .stTextArea textarea {
+                    background-color: #333 !important;
+                    color: #F0F0F0 !important;
+                }
+                .footer {
+                    background-color: #2A2D2E;
+                    color: #F0F0F0;
+                    border-top: 1px solid #444;
+                }
+                .main-header {
+                    color: #ffffff;
+                }
+                .sub-header {
+                    color: #cccccc;
+                }
+            </style>
+            """
+        else:
+            css_style = """
+            <style>
                 .stApp {
                     background: linear-gradient(to bottom right, #fafbfc, #f0f4f8);
-                    font-family: "Arial", sans-serif;
                 }
-                
-                body {
-                    margin: 0;
-                    padding: 0;
-                    color: #2C3E50;
-                }
-                
-                /* Main container for content */
                 .response-card {
                     background-color: #FFFFFF;
                     color: #2C3E50;
@@ -130,116 +174,56 @@ class AIStudyAssistant:
                     margin: 20px 0;
                     border: 1px solid #E0E4EB;
                     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-                    transition: 0.3s ease;
                 }
                 .response-card:hover {
                     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
                 }
-                
-                .hint-text {
+                .response-text {
                     background-color: #F7F9FA;
-                    color: #2C3E50;
-                    border-radius: 8px;
-                    padding: 15px;
-                    margin: 10px 0;
                     border-left: 6px solid #3498DB;
                 }
-                
-                /* Buttons */
                 .stButton > button {
-                    background-color: #3498DB;
-                    color: #ffffff;
+                    background-color: #3498DB !important;
+                    color: #ffffff !important;
                     border: none;
                     border-radius: 6px;
-                    padding: 10px 20px;
-                    font-size: 0.9rem;
-                    transition: 0.2s ease;
                 }
-
                 .stButton > button:hover {
-                    background-color: #2980b9;
-                    transform: translateY(-1px);
+                    background-color: #2980b9 !important;
                 }
-
-                /* Sidebar styling */
                 .stSidebar {
-                    background-color: #D6DCE5;
-                    border-right: 1px solid #BDC3C7;
+                    background-color: #D6DCE5 !important;
                 }
-                
-                /* Headers */
-                .main-header {
-                    color: #5D6D7E;
-                    font-size: 2.5em;
-                    text-align: center;
-                    margin-top: 2rem;
-                    margin-bottom: 0.25em;
-                    font-weight: bold;
+                .stFileUploader, .stTextArea textarea {
+                    background-color: #ffffff !important;
+                    color: #2C3E50 !important;
+                    border: 1px solid #dee2e6 !important;
+                    border-radius: 6px;
                 }
-                .sub-header {
-                    color: #7F8C8D;
-                    font-size: 1.3em;
-                    text-align: center;
-                    margin-bottom: 2rem;
-                }
-                
-                /* Footer */
                 .footer {
                     background-color: #ECF0F1;
                     color: #2C3E50;
-                    text-align: center;
-                    padding: 10px;
-                    position: fixed;
-                    bottom: 0;
-                    width: 100%;
-                    left: 0;
                     border-top: 1px solid #BDC3C7;
                 }
-
-                /* Tabs */
-                .stTabs [data-baseweb="tab-list"] {
-                    gap: 10px;
-                    background-color: #F2F4F6;
-                    border-radius: 8px 8px 0 0;
-                    padding: 0 10px;
+                .main-header {
+                    color: #5D6D7E;
                 }
-                .stTabs [data-baseweb="tab"] {
-                    height: 50px;
-                    border-radius: 6px 6px 0 0;
-                    color: #2C3E50;
-                    margin: 0 5px;
-                    padding: 0 20px;
-                }
-                .stTabs [aria-selected="true"] {
-                    background-color: #3498DB;
-                    color: #ffffff;
-                    box-shadow: none;
-                }
-                
-                /* Inputs and file uploaders */
-                .stTextArea textarea {
-                    background-color: #ffffff;
-                    color: #2C3E50;
-                    border: 1px solid #dee2e6;
-                    border-radius: 6px;
-                }
-                .stFileUploader {
-                    background-color: #ffffff;
-                    color: #2C3E50;
-                    border: 1px solid #dee2e6;
-                    border-radius: 6px;
-                    padding: 10px;
+                .sub-header {
+                    color: #7F8C8D;
                 }
             </style>
-            """,
-            unsafe_allow_html=True,
-        )
+            """
+
+        st.markdown(css_style, unsafe_allow_html=True)
 
     def render_sidebar(self):
         """
-        Render the sidebar with a logo (optional) and a topic type selector.
+        Renders the sidebar with a logo, a theme toggle, and a topic type selector.
         """
-        st.sidebar.image("img.png", width=250)
+        st.sidebar.image("img.png", width=200)
+        # Theme toggle
+        st.session_state.theme = st.sidebar.radio("Select Theme:", ("Light", "Dark"))
+        # Topic type radio
         self.topic_type = st.sidebar.radio("Topic Type:", ("General", "Coding", "Math", "Science"))
 
     def render_tabs(self):
@@ -265,98 +249,100 @@ class AIStudyAssistant:
 
     def render_text_tab(self):
         """
-        Text input tab: allows the user to input text and receive AI hints.
+        Text input tab: allows the user to input text and receive an AI response.
         """
-        user_input = st.text_area("Enter your question below:")
-        if st.button("Get Hint (Text)"):
+        user_input = st.text_area("Ask your question here:")
+        if st.button("Generate Response (Text)"):
             with st.spinner("Analyzing your question..."):
                 if user_input:
-                    hint = self.get_ai_response(user_input, self.topic_type)
-                    if hint:
-                        self.display_ai_hint(hint, "text", user_input)
+                    output = self.get_ai_output(user_input, self.topic_type)
+                    if output:
+                        self.display_ai_response(output, "text", user_input)
                 else:
-                    st.warning("Please enter a question.")
-        self.display_previous_responses('text')
+                    st.warning("Please enter a question first.")
+        self.display_previous_outputs('text')
 
     def render_image_tab(self):
         """
         Image input tab: user can upload an image, and the system will extract text
-        then provide an AI response. The processed text remains hidden.
+        then provide an AI response. The raw text is not displayed.
         """
         image_file = st.file_uploader("Upload an image file", type=["png", "jpg", "jpeg"])
-        if st.button("Get Hint (Image)"):
+        if st.button("Generate Response (Image)"):
             with st.spinner("Extracting text from your image..."):
                 if image_file:
                     extracted_text = self.process_image(image_file)
                     if extracted_text:
-                        hint = self.get_ai_response(extracted_text, self.topic_type)
-                        if hint:
-                            self.display_ai_hint(hint, "image", extracted_text)
+                        output = self.get_ai_output(extracted_text, self.topic_type)
+                        if output:
+                            self.display_ai_response(output, "image", extracted_text)
                 else:
-                    st.warning("Please upload an image.")
-        self.display_previous_responses('image')
+                    st.warning("Please upload an image file.")
+        self.display_previous_outputs('image')
 
     def render_pdf_tab(self):
         """
         PDF input tab: user can upload a PDF, and the system will extract text,
-        then provide an AI response. The processed text remains hidden.
+        then provide an AI response. The raw text is not displayed.
         """
         pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
-        if st.button("Get Hint (PDF)"):
+        if st.button("Generate Response (PDF)"):
             with st.spinner("Analyzing your PDF..."):
                 if pdf_file:
                     text = self.extract_text_from_pdf(pdf_file)
                     if text:
-                        hint = self.get_ai_response(text, self.topic_type)
-                        if hint:
-                            self.display_ai_hint(hint, "pdf", text)
+                        output = self.get_ai_output(text, self.topic_type)
+                        if output:
+                            self.display_ai_response(output, "pdf", text)
                 else:
                     st.warning("Please upload a PDF file.")
-        self.display_previous_responses('pdf')
+        self.display_previous_outputs('pdf')
 
-    def display_ai_hint(self, hint, source_type, raw_text):
+    def display_ai_response(self, response_text, source_type, raw_text):
         """
-        Displays the AI-generated hint in a response card.
-        Also stores the raw_text in session state if needed.
+        Displays the AI-generated response in a container.
+        Also stores the raw_text in session state for future reference.
         """
         st.markdown("<div class='response-card'>", unsafe_allow_html=True)
-        st.markdown("### AI Hint:")
-        st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
+        st.markdown("### AI Response:")
+        st.markdown(f'<div class="response-text" style="padding: 15px; margin: 10px 0;">{response_text}</div>',
+                    unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Store responses in session state
+        # Save responses in session state
         if source_type == 'text':
-            st.session_state.text_responses.append((raw_text, hint))
+            st.session_state.text_outputs.append((raw_text, response_text))
         elif source_type == 'image':
-            st.session_state.image_responses.append((raw_text, hint))
+            st.session_state.image_outputs.append((raw_text, response_text))
         elif source_type == 'pdf':
-            st.session_state.pdf_responses.append((raw_text, hint))
+            st.session_state.pdf_outputs.append((raw_text, response_text))
 
-    def display_previous_responses(self, response_type):
+    def display_previous_outputs(self, output_type):
         """
-        Renders previous responses (without showing the extracted text).
-        Only shows the AI-generated hints saved in session state.
+        Renders previous outputs without showing the extracted text.
+        Only shows the AI-generated response saved in session state.
         """
-        if response_type == 'text' and st.session_state.text_responses:
+        if output_type == 'text' and st.session_state.text_outputs:
             st.subheader("Previous Text Responses:")
-            self.render_responses(st.session_state.text_responses, "Question", "AI Hint")
-        elif response_type == 'image' and st.session_state.image_responses:
+            self.render_responses(st.session_state.text_outputs, "Text Query", "Response")
+        elif output_type == 'image' and st.session_state.image_outputs:
             st.subheader("Previous Image Responses:")
-            self.render_responses(st.session_state.image_responses, "Raw Data (hidden)", "AI Hint")
-        elif response_type == 'pdf' and st.session_state.pdf_responses:
+            self.render_responses(st.session_state.image_outputs, "Extracted Content (hidden)", "Response")
+        elif output_type == 'pdf' and st.session_state.pdf_outputs:
             st.subheader("Previous PDF Responses:")
-            self.render_responses(st.session_state.pdf_responses, "Raw Data (hidden)", "AI Hint")
+            self.render_responses(st.session_state.pdf_outputs, "Extracted Content (hidden)", "Response")
 
-    def render_responses(self, responses, input_label, hint_label):
+    def render_responses(self, outputs, input_label, response_label):
         """
-        General method to display stored hints without showing extracted text.
+        Displays stored responses without showing the processed input text in detail.
         """
-        for i, (input_text, hint) in enumerate(reversed(responses), 1):
+        for i, (input_text, response_text) in enumerate(reversed(outputs), 1):
             st.markdown("<div class='response-card'>", unsafe_allow_html=True)
             st.markdown(f"<h4>{input_label} {i}:</h4>", unsafe_allow_html=True)
             st.write("(Not shown)")
-            st.markdown(f"<h4>{hint_label} {i}:</h4>", unsafe_allow_html=True)
-            st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
+            st.markdown(f"<h4>{response_label} {i}:</h4>", unsafe_allow_html=True)
+            st.markdown(f'<div class="response-text" style="padding: 15px; margin: 10px 0;">{response_text}</div>',
+                        unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
     def render_footer(self):
@@ -370,11 +356,11 @@ class AIStudyAssistant:
 
     def render_progress_bar(self):
         """
-        Shows a progress bar in the sidebar for a visual loading effect.
+        Shows a progress bar in the sidebar for visual loading effect.
         """
         progress_bar = st.sidebar.progress(0)
         for i in range(100):
-            time.sleep(0.005)  # Slightly faster progress for a smoother feel
+            time.sleep(0.005)
             progress_bar.progress(i + 1)
         st.sidebar.success("Ready!")
 
