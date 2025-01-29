@@ -342,7 +342,7 @@ with pdf_tab:
                 st.markdown("<div class='response-divider'></div>", unsafe_allow_html=True)
 
 # Footer
-st.markdown("<div class='footer'>© 2024 AI Study Assistant. All rights reserved.</div>", unsafe_allow_html=True)
+st.markdown("<div class='footer'>© 2024 ThinkQuest. All rights reserved.</div>", unsafe_allow_html=True)
 
 # Progress bar in sidebar
 progress_bar = st.sidebar.progress(0)
