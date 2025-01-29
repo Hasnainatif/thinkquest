@@ -261,7 +261,7 @@ class AIStudyAssistant:
         st.markdown("<h1 class='main-header'>AI Study Assistant</h1>", unsafe_allow_html=True)
         st.markdown("<h2 class='sub-header'>Welcome! How can I assist you today?</h2>", unsafe_allow_html=True)
 
-        text_tab, image_tab, pdf_tab = st.tabs(["Text", "Image", "PDF"])
+        text_tab, image_tab, pdf_tab = st.tabs(["Text Input", "Image Input", "PDF Input"])
         
         with text_tab:
             self.render_text_tab()
@@ -332,7 +332,7 @@ class AIStudyAssistant:
         Also stores the raw_text in session state if needed and adds a copy-to-clipboard button.
         """
         st.markdown("<div class='response-card'>", unsafe_allow_html=True)
-        st.markdown("## ThinkQuest:")
+        st.markdown("### ThinkQuest:")
         st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
         
      
