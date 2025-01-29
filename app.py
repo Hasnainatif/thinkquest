@@ -66,7 +66,7 @@ def get_ai_response(input_text, topic_type):
                     "content": input_text,
                 }
             ],
-            model="llama-3.1-70b-versatile",
+            model="deepseek-r1-distill-llama-70b",
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
