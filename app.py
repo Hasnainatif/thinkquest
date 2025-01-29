@@ -143,6 +143,18 @@ class AIStudyAssistant:
                     margin: 10px 0;
                     border-left: 5px solid #3498DB;
                 }
+                .copy-btn {
+                    background-color: #27ae60;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 6px 12px;
+                    cursor: pointer;
+                    margin-top: 5px;
+                }
+                .copy-btn:hover {
+                    background-color: #2ecc71;
+                }
                 .stButton > button {
                     background-color: #3498DB;
                     color: white;
@@ -333,7 +345,20 @@ class AIStudyAssistant:
         st.markdown("### AI Hint:")
         st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
         
-     
+        # A simple HTML/JS snippet for copying the hint to clipboard:
+        copy_script = f"""
+        <script>
+        function copyResponse(){{
+            navigator.clipboard.writeText("{hint.replace('"', '\\"')}");
+            alert('AI Hint copied to clipboard!');
+        }}
+        </script>
+        <button class="copy-btn" onclick="copyResponse()">Copy AI Hint</button>
+        """
+        st.markdown(copy_script, unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+
         # Store in session_state for future reference
         if source_type == 'text':
             st.session_state.text_responses.append((raw_text, hint))
@@ -369,6 +394,19 @@ class AIStudyAssistant:
             st.markdown(f"<h4>{hint_label} {i}:</h4>", unsafe_allow_html=True)
             st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
 
+            # Copy button for the stored hint
+            copy_script = f"""
+            <script>
+            function copyResponse{i}(){{
+                navigator.clipboard.writeText("{hint.replace('"', '\\"')}");
+                alert('AI Hint copied to clipboard!');
+            }}
+            </script>
+            <button class="copy-btn" onclick="copyResponse{i}()">Copy AI Hint</button>
+            """
+            st.markdown(copy_script, unsafe_allow_html=True)
+
+            st.markdown("</div>", unsafe_allow_html=True)
             if i < len(responses):
                 st.markdown("<div class='response-divider'></div>", unsafe_allow_html=True)
 
@@ -377,7 +415,7 @@ class AIStudyAssistant:
         Adds a footer at the bottom of the page.
         """
         st.markdown(
-            "<div class='footer'>© 2025 ThinkQuest. All rights reserved.</div>",
+            "<div class='footer'>© 2024 ThinkQuest. All rights reserved.</div>",
             unsafe_allow_html=True,
         )
 
