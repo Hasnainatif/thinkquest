@@ -1,6 +1,6 @@
 
 streamlit
-anthropic
+groq
 pytesseract
 requests
 PyMuPDF
