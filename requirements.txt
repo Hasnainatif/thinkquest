@@ -1,7 +1,7 @@
 
 streamlit
 groq
-pytesseract
+easyocr
 requests
 PyMuPDF
 speechrecognition
