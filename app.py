@@ -27,7 +27,6 @@ class AIStudyAssistant:
     def get_ai_response(self, input_text, topic_type):
         """
         Sends user input text to the Groq API and returns the AI-generated response.
-        The 'topic_type' parameter tailors the system instructions to a specific subject.
         Includes a safeguard: if the user demands exact answers, it responds with a refusal.
         """
         # Check for direct demand of exact answers
@@ -39,14 +38,12 @@ class AIStudyAssistant:
 
         try:
             # Construct a system message for the AI
-            # Emphasize educational focus, encourage providing hints, 
-            # and restrict to the specified topic only.
             system_message = (
                 "You are an AI study assistant focusing on educational topics. "
                 "Provide hints and approaches to solve problems, but do not give exact answers. "
                 "Ensure each hint fosters curiosity and deeper thinking. "
                 f"Focus strictly on {topic_type}-related hints. "
-                "If a user demands an exact answer, politely refuse and explain you cannot provide it."
+                "If a user demands an exact answer, politely refuse."
             )
 
             # Send to Groq for completion
@@ -142,18 +139,6 @@ class AIStudyAssistant:
                     padding: 15px;
                     margin: 10px 0;
                     border-left: 5px solid #3498DB;
-                }
-                .copy-btn {
-                    background-color: #27ae60;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 6px 12px;
-                    cursor: pointer;
-                    margin-top: 5px;
-                }
-                .copy-btn:hover {
-                    background-color: #2ecc71;
                 }
                 .stButton > button {
                     background-color: #3498DB;
@@ -303,7 +288,7 @@ class AIStudyAssistant:
     def render_image_tab(self):
         """
         Image input tab: user can upload an image, and the system will extract text
-        and provide an AI response (education-focused). The processed text is not shown directly.
+        and provide an AI response. The processed text is not displayed directly.
         """
         image_file = st.file_uploader("Upload image file", type=["png", "jpg", "jpeg"])
         if st.button("Get Hint (Image)"):
@@ -321,7 +306,7 @@ class AIStudyAssistant:
     def render_pdf_tab(self):
         """
         PDF input tab: user can upload a PDF, and the system will extract text
-        and provide an AI response (education-focused). The processed text is not shown directly.
+        and provide an AI response (education-focused). The processed text is not displayed directly.
         """
         pdf_file = st.file_uploader("Upload PDF file", type=["pdf"])
         if st.button("Get Hint (PDF)"):
@@ -338,28 +323,16 @@ class AIStudyAssistant:
 
     def display_ai_hint(self, hint, source_type, raw_text):
         """
-        Displays only the AI-generated hint (no processed text shown).
-        Also stores the raw_text in session state if needed and adds a copy-to-clipboard button.
+        Displays the AI-generated hint (no direct copying script).
+        We provide a text input so users can select and copy the hint easily.
         """
         st.markdown("<div class='response-card'>", unsafe_allow_html=True)
         st.markdown("### AI Hint:")
-        st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
-        
-        # A simple HTML/JS snippet for copying the hint to clipboard:
-        copy_script = f"""
-        <script>
-        function copyResponse(){{
-            navigator.clipboard.writeText("{hint.replace('"', '\\"')}");
-            alert('AI Hint copied to clipboard!');
-        }}
-        </script>
-        <button class="copy-btn" onclick="copyResponse()">Copy AI Hint</button>
-        """
-        st.markdown(copy_script, unsafe_allow_html=True)
-        
+        # Show a small text area for easy copying
+        st.text_area("Copy this hint:", value=hint, height=100, key=None)
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Store in session_state for future reference
+        # Store in session state if needed
         if source_type == 'text':
             st.session_state.text_responses.append((raw_text, hint))
         elif source_type == 'image':
@@ -384,28 +357,15 @@ class AIStudyAssistant:
 
     def render_responses(self, responses, input_label, hint_label):
         """
-        General method to render previous hints without showing the extracted text in detail.
-        Also includes a copy button for each stored hint.
+        Show stored hints (without launching any script).
+        Users can copy from these text areas if desired.
         """
         for i, (input_text, hint) in enumerate(reversed(responses), 1):
             st.markdown("<div class='response-card'>", unsafe_allow_html=True)
             st.markdown(f"<h4>{input_label} {i}:</h4>", unsafe_allow_html=True)
-            st.write("(Not shown)")  # Not displaying the processed text
+            st.write("(Not shown)")
             st.markdown(f"<h4>{hint_label} {i}:</h4>", unsafe_allow_html=True)
-            st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
-
-            # Copy button for the stored hint
-            copy_script = f"""
-            <script>
-            function copyResponse{i}(){{
-                navigator.clipboard.writeText("{hint.replace('"', '\\"')}");
-                alert('AI Hint copied to clipboard!');
-            }}
-            </script>
-            <button class="copy-btn" onclick="copyResponse{i}()">Copy AI Hint</button>
-            """
-            st.markdown(copy_script, unsafe_allow_html=True)
-
+            st.text_area("Copy this hint:", value=hint, height=100, key=f"hint_{response_type}_{i}")
             st.markdown("</div>", unsafe_allow_html=True)
             if i < len(responses):
                 st.markdown("<div class='response-divider'></div>", unsafe_allow_html=True)
@@ -429,8 +389,6 @@ class AIStudyAssistant:
             progress_bar.progress(i + 1)
         st.sidebar.success("Ready!")
 
-
-# Instantiate and render the UI
 if __name__ == "__main__":
     assistant = AIStudyAssistant()
     assistant.render_ui()
