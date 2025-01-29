@@ -6,7 +6,7 @@ from PIL import Image
 from groq import Groq
 
 class AIStudyAssistant:
-    def _init_(self):
+    def __init__(self):
         """
         Initialize the AI study assistant:
         - Sets up the Groq client using the API key stored in Streamlit secrets.
@@ -397,6 +397,6 @@ class AIStudyAssistant:
 
 
 # Instantiate and render the UI
-if _name_ == "_main_":
+if __name__ == "__main__":
     assistant = AIStudyAssistant()
     assistant.render_ui()
