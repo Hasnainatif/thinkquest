@@ -45,8 +45,9 @@ class AIStudyAssistant:
                 "You are an AI study assistant focusing on educational topics. "
                 "Provide hints and approaches to solve problems, but do not give exact answers. "
                 "Ensure each hint fosters curiosity and deeper thinking. "
+                "Ensure to add in every response that I can assist only you to find the answers and it will ultimately help your creativity and critical thinking. Let me know if you want to further discuss this topic with me."
                 f"Focus strictly on {topic_type}-related hints. "
-                "If a user demands an exact answer, politely refuse and explain you cannot provide it."
+                "If a user demands an exact answer, politely refuse and explain you cannot provide it. Encourage them to discuss the question with you so you can help them by providing hints."
             )
 
             # Send to Groq for completion
@@ -260,7 +261,7 @@ class AIStudyAssistant:
         st.markdown("<h1 class='main-header'>AI Study Assistant</h1>", unsafe_allow_html=True)
         st.markdown("<h2 class='sub-header'>Welcome! How can I assist you today?</h2>", unsafe_allow_html=True)
 
-        text_tab, image_tab, pdf_tab = st.tabs(["Text Input", "Image Input", "PDF Input"])
+        text_tab, image_tab, pdf_tab = st.tabs(["Text", "Image", "PDF"])
         
         with text_tab:
             self.render_text_tab()
@@ -279,7 +280,7 @@ class AIStudyAssistant:
         Text input tab: allows the user to input text and receive AI hints.
         """
         user_input = st.text_area("Enter your question:")
-        if st.button("Get Hint (Text)"):
+        if st.button("Get Response"):
             with st.spinner("Processing..."):
                 if user_input:
                     hint = self.get_ai_response(user_input, self.topic_type)
@@ -295,7 +296,7 @@ class AIStudyAssistant:
         and provide an AI response (education-focused). The processed text is not shown directly.
         """
         image_file = st.file_uploader("Upload image file", type=["png", "jpg", "jpeg"])
-        if st.button("Get Hint (Image)"):
+        if st.button("Get Response"):
             with st.spinner("Processing..."):
                 if image_file:
                     extracted_text = self.process_image(image_file)
@@ -313,7 +314,7 @@ class AIStudyAssistant:
         and provide an AI response (education-focused). The processed text is not shown directly.
         """
         pdf_file = st.file_uploader("Upload PDF file", type=["pdf"])
-        if st.button("Get Hint (PDF)"):
+        if st.button("Get Response"):
             with st.spinner("Processing..."):
                 if pdf_file:
                     text = self.extract_text_from_pdf(pdf_file)
@@ -331,7 +332,7 @@ class AIStudyAssistant:
         Also stores the raw_text in session state if needed and adds a copy-to-clipboard button.
         """
         st.markdown("<div class='response-card'>", unsafe_allow_html=True)
-        st.markdown("### ThinkQuest:")
+        st.markdown("## ThinkQuest:")
         st.markdown(f'<div class="hint-text">{hint}</div>', unsafe_allow_html=True)
         
      
@@ -351,13 +352,13 @@ class AIStudyAssistant:
         """
         if response_type == 'text' and st.session_state.text_responses:
             st.markdown("### Previous Text Responses:")
-            self.render_responses(st.session_state.text_responses, "Question", "AI Hint")
+            self.render_responses(st.session_state.text_responses, "Question", "AI Response")
         elif response_type == 'image' and st.session_state.image_responses:
             st.markdown("### Previous Image Responses:")
-            self.render_responses(st.session_state.image_responses, "Raw Data (hidden)", "AI Hint")
+            self.render_responses(st.session_state.image_responses, "Raw Data (hidden)", "AI Response")
         elif response_type == 'pdf' and st.session_state.pdf_responses:
             st.markdown("### Previous PDF Responses:")
-            self.render_responses(st.session_state.pdf_responses, "Raw Data (hidden)", "AI Hint")
+            self.render_responses(st.session_state.pdf_responses, "Raw Data (hidden)", "AI Response")
 
     def render_responses(self, responses, input_label, hint_label):
         """
