@@ -1,1 +1,7 @@
 
+streamlit
+groq
+pytesseract
+requests
+PyMuPDF
+speechrecognition
