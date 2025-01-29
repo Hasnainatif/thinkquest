@@ -68,7 +68,7 @@ def get_ai_response(input_text, topic_type):
                     "content": input_text,
                 }
             ],
-            model="llama-3.1-70b-versatile",
+            model="deepseek-r1-distill-llama-70b",
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
@@ -240,7 +240,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar
-st.sidebar.image("Q(1).png", width=250)
+st.sidebar.image("Q1.png", width=250)
 topic_type = st.sidebar.radio("Topic type:", ("General", "Coding", "Math", "Science"))
 
 # Main content
